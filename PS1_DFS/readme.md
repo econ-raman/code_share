@@ -2,5 +2,5 @@ This repository contains the Julia code for solving the model and various plots 
 
 ### Running the code
 
-- Place your a and b matrix '.txt' files in solve_model/input directory
-- Change terminal directory to solve_model/code and type `make`
+- Place your a and b matrix '.txt' files in `solve_model/input` directory
+- Change terminal directory to `solve_model/code` and type `make`
