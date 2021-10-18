@@ -21,11 +21,10 @@ end
 
     
 
-function DFS1977fig1(a::Array{Float64,2},b::Array{Float64,1},L::Array{Float64,1}, g::Float64)
+function DFS1977fig1(fig1, a::Array{Float64,2},b::Array{Float64,1},L::Array{Float64,1}, g::Float64)
     basic_checks(a,b,L,g)
     A = a[:,1]./a[:,2];
     N = length(A);
-    fig1 = plot()
     z = collect(range(0, stop = 1, length = N));
     fig1 = plot!(z,A, xlabel = "z", label = "A(z)", linewidth = 3, palette = :grays)
 
@@ -57,7 +56,7 @@ function DFS1977solver_g1(a::Array{Float64,2},b::Array{Float64,1},L::Array{Float
         end
   end
   ω̄ = (A[z̄] + A[z̄-1]) / 2
-  return ω̄, z[z̄]
+  return ω̄, z[z̄], z[z̄]
 
 end
 
@@ -75,6 +74,8 @@ function z_bar_star(g::Float64,ω::Float64, z::Array{Float64,1}, A::Array{Float6
     return z̄
 end
 
+
+
 function DFS1977solver_any_g(a::Array{Float64,2},b::Array{Float64,1},L::Array{Float64,1},g::Float64)
 
     basic_checks(a,b,L,g)
@@ -84,23 +85,24 @@ function DFS1977solver_any_g(a::Array{Float64,2},b::Array{Float64,1},L::Array{Fl
     
     A_1 = A ./ g;
 
-         λ(g, ω) = sum(b[1:Int(floor(z_bar(g,ω,z,A)  *N))])
+    λ(g, ω) = sum(b[1:Int(floor(z_bar(g,ω,z,A)  *N))])
     λ_star(g, ω) = sum(b[Int(floor(z_bar(g,ω,z,A)  *N)):end])
+    F(ω̄) =  ω̄ - (( (1 - λ_star(g, ω̄)) / (1 - λ(g, ω̄)) ) * (L[1] / L[2]))
 
-  
+    
     # simple grid search Solution
 
-     ω̄_grid = collect(range(A_1[1], stop = A_1[end], length = 1000))
-     F(ω̄) =  ω̄ - (( (1 - λ_star(g, ω̄)) / (1 - λ(g, ω̄)) ) * (L[1] / L[2]))
+     ω̄_grid = collect(range(A_1[1], stop = A_1[end], length = 100))
+     
      ω_bar = 0.0
     for i in 1:99
         if (F(ω̄_grid[end+1-i]) * F(ω̄_grid[end-i]) < 0)
             break
         end
-        ω_bar = (ω̄_grid[end+1-i] +  ω̄_grid[end-i]) / 2;
+         ω_bar = (ω̄_grid[end+1-i] +  ω̄_grid[end-i]) / 2;
     end
     
-
+    
   
     z̄ = z_bar(g, ω_bar, z, A)
     z̄_star = z_bar_star(g, ω_bar, z, A) 
@@ -116,3 +118,45 @@ function DFS1977solver(a::Array{Float64,2},b::Array{Float64,1},L::Array{Float64,
         DFS1977solver_any_g(a,b,L,g)
     end
 end
+
+function DFS_fig3(a::Array{Float64,2},b::Array{Float64,1},L::Array{Float64,1},g::Float64)
+    ω_bar, z̄, z̄_star = DFS1977solver(a,b,L,g)
+    A = a[:,1]./a[:,2];
+    N = length(A);
+    z = collect(range(0, stop = 1, length = N));
+
+    fig3 = plot(z, A .* g, label = "A(z)g", linecolor = :black, linewidth = 3, xlabel = "z", ylabel = "ω")
+    fig3 = plot!(z, A ./ g, label = "A(z)/g", linecolor = :black, linewidth = 3)
+    fig3 = hline!([ω_bar], label = "ω̄", linecolor = :black)
+    fig3 = vline!([z̄], label = "z̄", ls = :dash, linecolor = :black)
+    fig3 = vline!([z̄_star], label = "z̄_star", ls = :dash, linecolor = :black)
+    return fig3 
+end
+
+
+function home_welfare(a::Array{Float64,2},b::Array{Float64,1},L::Array{Float64,1},g::Float64)
+    ω_bar, z̄, z̄_star = DFS1977solver(a,b,L,g)
+    term1 = b .* log.(a[:,2]);
+    term2 = b .* log.(ω_bar .* a[:,1])
+    welfare = sum(term1[1:Int(floor(z̄*N))]) + sum(term2[Int(floor(z̄*N)):end])
+    return welfare
+end
+
+function foreign_welfare(a::Array{Float64,2},b::Array{Float64,1},L::Array{Float64,1},g::Float64)
+    ω_bar, z̄, z̄_star = DFS1977solver(a,b,L,g)
+    term1 = b .* log.(a[:,1]);
+    term2 = b .* log.(ω_bar .* a[:,1])
+    welfare = sum(term1[1:Int(floor(z̄*N))]) + sum(term2[Int(floor(z̄*N)):end])
+    return welfare
+end
+
+
+function trade_volume(a::Array{Float64,2},b::Array{Float64,1},L::Array{Float64,1},g::Float64)
+    ω_bar, z̄, z̄_star = DFS1977solver(a,b,L,g)
+    term1 = b .* log.(a[:,1]);
+    term2 = b .* log.(ω_bar .* a[:,1])
+    vot = sum(term1[1:Int(floor(z̄_star*N))]) + sum(term2[Int(floor(z̄*N)):end])
+    return vot
+end
+
+
