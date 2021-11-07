@@ -1,0 +1,140 @@
+\documentclass{report}
+
+%%METADATA
+\title{Understanding \cite{sorkin2018ranking}}
+\author{
+Raman Singh Chhina \\ {University of Chicago}
+}
+\date{}
+
+%%PACKAGES
+\usepackage{graphicx}
+\usepackage{tabularx}
+\usepackage{setspace}
+\usepackage{amsmath,amsthm,amssymb}
+\usepackage[hyphens]{url}
+\usepackage{natbib}
+\usepackage[font=normalsize,labelfont=bf]{caption}
+\usepackage[margin=1in]{geometry}
+\usepackage{hyperref}
+\hypersetup{colorlinks=true,urlcolor=blue,citecolor=red}
+\usepackage{enumerate}% http://ctan.org/pkg/enumerate %Supports lowercase Roman-letter enumeration
+\usepackage{verbatim} %Package with \begin{comment} environment
+\usepackage{physics}
+\usepackage{tikz}
+\usepackage{listings}
+\usepackage{upquote}
+\usepackage{booktabs} %Package with \toprule and \bottomrule
+\usepackage{etoc}     %Package with \localtableofcontents
+\usepackage{multicol}
+\usepackage{bm}
+\usepackage{float}
+
+\definecolor{dkgreen}{rgb}{0,0.6,0}
+\definecolor{gray}{rgb}{0.5,0.5,0.5}
+\definecolor{mauve}{rgb}{0.58,0,0.82}
+
+\lstset{language=bash,
+  frame=tb,
+  aboveskip=3mm,
+  belowskip=3mm,
+  showstringspaces=false,
+  columns=flexible,
+  basicstyle={\small\ttfamily},
+  numbers=none,
+  numberstyle=\tiny\color{gray},
+  keywordstyle=\color{blue},
+  commentstyle=\color{dkgreen},
+  stringstyle=\color{mauve},
+  breaklines=true,
+  breakatwhitespace=false,
+  tabsize=3
+}
+\newtheorem{theorem}{Theorem}
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{proposition}[theorem]{Proposition}
+\newtheorem{example}[theorem]{Example}
+
+
+%%FORMATTING
+\onehalfspacing
+\numberwithin{equation}{section}
+\numberwithin{figure}{section}
+\numberwithin{table}{section}
+\bibliographystyle{bib/aeanobold-oxford.bst}
+
+%LOGBOOK
+\begin{document}
+
+%%LOGBOOK COVER
+\maketitle
+
+%TABLE OF CONTENTS
+\renewcommand{\thechapter}{\Alph{chapter}}
+\setcounter{tocdepth}{1}
+\tableofcontents
+\etocsettocstyle{}{} % from now on only local tocs
+
+\clearpage
+
+\section{Pseudo code}
+
+\subsection{Define worker and firm types}
+
+\begin{enumerate}
+  \item Draw $n_k$ firm types and amenity pairs  ($\Psi_k$, $V_k$) from a joint normal distribution $\mathcal N \left( \begin{pmatrix}
+    0 \\
+    0
+  \end{pmatrix}, \begin{pmatrix}
+    \sigma^2_{\Psi} & \rho \sigma_{\Psi} \sigma_{V}  \\
+    \rho \sigma_{V} \sigma_{\Psi} & \sigma^2_{V}
+  \end{pmatrix} \right)$
+  \item Draw $n_l$ worker types $\alpha_l$ from a normal distribution with mean zero and variance $\sigma^2_{\alpha}$. (to keep it simple get the values at $n_l$ quantiles)
+\end{enumerate}
+
+\subsection{Simulate Panel}
+
+\begin{enumerate}
+  \item[$t=0$: 1] Randomly draw a worker type $\alpha_l$ from the $n_l$ possible worker types.
+  \item[$t=0$: 2] We assume that the workers are sorted in period zero. So draw the firm type $\Psi_k$ as follows — \\
+  Randomly sample $\Psi_k$ from the $n_k$ possible values with a probability of picking the k\textsuperscript{th} firm type given by $\phi_{\sigma^2}(\Psi_k - \sigma_{\text{sort}} \alpha_l)$. Where $\phi_{\sigma^2}(.)$ is the probability density function of the normal distribution with mean zero and variance $\sigma^2$. This implies that if $\sigma_{\text{sort}} > 0$, then on average a higher $\alpha_l$ worker has a higher initial $\Psi_k$ firm. Given that each firm class has a unique amenity level we get the tuple ($\alpha_l,\Psi_k, V_k$) for each individual in the period zero.
+  \item[$t = 1$:] \label{iterator} In the next period following things can happen to the worker —
+  \begin{enumerate}
+      \item Worker doesn't dies (which happens with probability $1-\gamma$) and the worker doesn't gets an outside offer (which occurs with probability $1-\lambda$). In this case worker stays at the same firm, the total probability of this happening is $(1-\gamma)(1-\lambda)$.
+      \item The worker doesn't dies and gets an outside job offer. This event occurs with probability $\lambda (1-\gamma)$. In this case
+      \begin{itemize}
+        \item The worker moves to the new firm with probability $\frac{e^{V_{k'}}}{e^{V_k} + e^{V_{k'}}}$.
+        \item Stays at the same firm with probability $\frac{e^{V_{k}}}{e^{V_k} + e^{V_{k'}}}$.
+      \end{itemize}
+      \item The worker dies. This occurs with probability $\gamma$ and in this case the match is replaced by a new worker-firm pair as in $t = 0$.
+  \end{enumerate}
+  \item[$t = 2 \text{ to } 10$: ] Repeat the previous step.
+\end{enumerate}
+
+\subsubsection{Some comments}
+If there no probability of death then the sorting in the firms would decay out. By bringing in fresh matches we ensure that the sorting stays at a positive level.
+
+
+\subsection{Estimation}
+
+Equation (6) in \cite{sorkin2018ranking} shows that if the workers choose the firms as argued in the paper then the observed flows and firm amenities are related as follows
+
+\begin{align}
+  \frac{\sum_{k' \in \{1,2..n_k\}} M^o_{kk'} e^{V_{k'}}}{\sum_{k' \in \{1,2..n_k\}} M^0_{k'k}} = e^{V_k}
+\end{align}
+
+where $M^o_{kk'}$ is the flow of workers moving from $k'$ to $k$ and vice versa. This is nothing but the Market Access!!! This is a recursive system. Writing this in matrix notation
+
+\begin{align}
+(\mathbf S^o)^{-1} \mathbf M^o e^{\mathbf V} = e^{\mathbf V}
+\end{align}
+
+$e^{\mathbf V}$ is just the eigen vector of the transformation $(\mathbf S^o)^{-1} \mathbf M^o$ with an eigen value equal to 1. We can solve this iteratively.\\
+
+
+\textcolor{red}{If this shows me bias here then this is directly applicable to the paper with Jonathan. There is a straightforward extension here too — right now each period the worker gets a random draw and then decides whether to move or not. But we can directly bring in the Eaton-Kortum machinery allow the individual to search over all firms. Infact, I can do that in this exercise by just modifying the random draw step. }
+
+%%LOGBOOK BIBLIOGRAPHY
+\bibliography{bib/reference.bib}
+
+\end{document}
